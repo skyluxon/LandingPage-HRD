@@ -2,6 +2,8 @@ import express from "express";
 import path from "path";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import { randomUUID } from "node:crypto";
+import { InquiryMailError, sendInquiryMail, validateInquiry } from "./server/inquiry-mail";
 
 dotenv.config();
 
@@ -193,8 +195,11 @@ Coursera for Business 수준의 높은 신뢰도와 체계적인 엔터프라이
 });
 
 // API Route: Submit Consultation Request
-app.post("/api/inquiries", (req, res) => {
+app.post("/api/inquiries", async (req, res) => {
   try {
+    if (!validateInquiry(req.body)) {
+      return res.status(400).json({ error: "필수 정보와 이메일 형식, 개인정보 수집 동의를 확인해주세요." });
+    }
     const {
       companyName,
       contactName,
@@ -209,12 +214,8 @@ app.post("/api/inquiries", (req, res) => {
       selectedCurriculums,
     } = req.body;
 
-    if (!companyName || !contactName || !email || !phone) {
-      return res.status(400).json({ error: "필수 정보(회사명, 담당자명, 이메일, 연락처)를 모두 입력해주세요." });
-    }
-
     const newRequest: ConsultationRequest = {
-      id: `REQ-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+      id: `REQ-${randomUUID()}`,
       createdAt: new Date().toISOString(),
       companyName,
       contactName,
@@ -229,6 +230,7 @@ app.post("/api/inquiries", (req, res) => {
       selectedCurriculums: selectedCurriculums || [],
     };
 
+    await sendInquiryMail(newRequest);
     mockConsultations.unshift(newRequest);
 
     res.json({
@@ -238,13 +240,19 @@ app.post("/api/inquiries", (req, res) => {
       data: newRequest,
     });
   } catch (err: any) {
-    console.error("Inquiry error:", err);
+    if (err instanceof InquiryMailError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    console.error("Inquiry processing failed");
     res.status(500).json({ error: "상담 신청 처리 중 오류가 발생했습니다." });
   }
 });
 
 // API Route: Get recent inquiries (for demo/admin visibility)
 app.get("/api/inquiries", (_req, res) => {
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    return res.status(404).json({ error: "Not found" });
+  }
   res.json({ success: true, count: mockConsultations.length, data: mockConsultations });
 });
 
@@ -274,4 +282,8 @@ async function start() {
   });
 }
 
-start();
+if (!process.env.VERCEL) {
+  start();
+}
+
+export default app;

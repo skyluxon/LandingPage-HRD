@@ -34,8 +34,8 @@ export default function ConsultationModal({
     jobTitle: '',
     email: '',
     phone: '',
-    targetDepartment: '전사 공통',
-    employeeCount: '30~50명 (팀장 및 실무자)',
+    targetDepartment: '전사 공통 실무',
+    employeeCount: '10~25명 (부서 핵심인력 파일럿)',
     preferredFormat: '온·오프라인 융합 (추천)',
     budgetRange: '협의 필요 (견적서 요청)',
     inquiryDetails: '',
@@ -64,6 +64,7 @@ export default function ConsultationModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!agreedPrivacy) {
       alert('개인정보 수집 및 이용에 동의해주세요.');
       return;
@@ -76,7 +77,7 @@ export default function ConsultationModal({
       const response = await fetch('/api/inquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({ ...formData, agreedPrivacy })
       });
 
       const data = await response.json();
@@ -344,7 +345,7 @@ export default function ConsultationModal({
             </div>
 
             {errorMessage && (
-              <p className="text-xs text-rose-600 font-bold bg-rose-50 p-2.5 rounded-lg border border-rose-200">
+              <p role="alert" className="text-xs text-rose-600 font-bold bg-rose-50 p-2.5 rounded-lg border border-rose-200">
                 {errorMessage}
               </p>
             )}
@@ -372,7 +373,7 @@ export default function ConsultationModal({
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>제출 중...</span>
+                      <span>상담 메일 전송 중...</span>
                     </>
                   ) : (
                     <>
