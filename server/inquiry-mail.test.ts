@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { InquiryMailError, sendInquiryMail, validateInquiry } from './inquiry-mail.ts';
+import { InquiryMailError, sendInquiryMail, validateInquiry, getInquiryValidationError } from './inquiry-mail.ts';
 
 const inquiry = {
   id: 'REQ-test', companyName: '테스트 회사', contactName: '테스트 담당자',
@@ -10,6 +10,14 @@ const inquiry = {
   selectedCurriculums: ['AX 실무'], agreedPrivacy: true,
 };
 const env = { RESEND_API_KEY: 'test-key', RESEND_FROM_EMAIL: 'AX <sender@example.com>', INQUIRY_TO_EMAIL: 'hr@example.com' };
+
+test('validation identifies the incorrect field without echoing personal data', () => {
+  assert.equal(getInquiryValidationError(inquiry), null);
+  assert.match(getInquiryValidationError({ ...inquiry, jobTitle: ' ' })!, /직책/);
+  assert.match(getInquiryValidationError({ ...inquiry, email: 'test@company' })!, /name@company.com/);
+  assert.match(getInquiryValidationError({ ...inquiry, agreedPrivacy: false })!, /동의/);
+  assert.match(getInquiryValidationError({ ...inquiry, inquiryDetails: 'x'.repeat(5001) })!, /5,000/);
+});
 
 test('validates required fields, consent, email and curriculum types', () => {
   assert.equal(validateInquiry(inquiry), true);

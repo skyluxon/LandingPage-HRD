@@ -3,7 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { randomUUID } from "node:crypto";
-import { InquiryMailError, sendInquiryMail, validateInquiry } from "./server/inquiry-mail.js";
+import { InquiryMailError, sendInquiryMail, getInquiryValidationError } from "./server/inquiry-mail.js";
 
 dotenv.config();
 
@@ -197,8 +197,9 @@ Coursera for Business 수준의 높은 신뢰도와 체계적인 엔터프라이
 // API Route: Submit Consultation Request
 app.post("/api/inquiries", async (req, res) => {
   try {
-    if (!validateInquiry(req.body)) {
-      return res.status(400).json({ error: "필수 정보와 이메일 형식, 개인정보 수집 동의를 확인해주세요." });
+    const validationError = getInquiryValidationError(req.body);
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
     }
     const {
       companyName,

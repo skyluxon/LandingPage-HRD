@@ -9,15 +9,34 @@ export class InquiryMailError extends Error {
 }
 
 export function validateInquiry(body: any): body is ConsultationFormData & { agreedPrivacy: true } {
-  if (!body || typeof body !== 'object' || body.agreedPrivacy !== true) return false;
-  const required = ['companyName', 'contactName', 'jobTitle', 'email', 'phone'];
-  if (required.some(key => typeof body[key] !== 'string' || !body[key].trim() || body[key].length > 254)) return false;
-  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(body.email.trim())) return false;
-  const optional = ['targetDepartment', 'employeeCount', 'preferredFormat', 'budgetRange', 'inquiryDetails'];
-  if (optional.some(key => body[key] != null && (typeof body[key] !== 'string' || body[key].length > 5000))) return false;
-  return body.selectedCurriculums == null || (Array.isArray(body.selectedCurriculums)
-    && body.selectedCurriculums.length <= 30
-    && body.selectedCurriculums.every((item: unknown) => typeof item === 'string' && item.length <= 300));
+  return getInquiryValidationError(body) === null;
+}
+
+export function getInquiryValidationError(body: any): string | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return '신청 정보를 확인할 수 없습니다. 새로고침 후 다시 입력해주세요.';
+  const required: Record<string, string> = {
+    companyName: '회사명 / 기관명', contactName: '담당자 성함', jobTitle: '직책 / 소속 부서',
+    email: '회사 이메일 주소', phone: '담당자 연락처',
+  };
+  for (const [key, label] of Object.entries(required)) {
+    if (typeof body[key] !== 'string' || !body[key].trim()) return `${label} 항목을 입력해주세요. 공백만 입력할 수 없습니다.`;
+    if (body[key].length > 254) return `${label} 항목은 254자 이하로 입력해주세요.`;
+  }
+  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(body.email.trim())) return '회사 이메일 주소를 name@company.com 형식으로 입력해주세요.';
+  if (body.agreedPrivacy !== true) return '개인정보 수집 및 이용에 동의해주세요.';
+  const optional: Record<string, string> = {
+    targetDepartment: '교육 대상 부서', employeeCount: '예상 교육 대상 인원',
+    preferredFormat: '선호 진행 방식', budgetRange: '예산', inquiryDetails: '문의 사항',
+  };
+  for (const [key, label] of Object.entries(optional)) {
+    if (body[key] != null && (typeof body[key] !== 'string' || body[key].length > 5000)) return `${label} 항목은 5,000자 이하의 텍스트로 입력해주세요.`;
+  }
+  if (body.selectedCurriculums != null && (!Array.isArray(body.selectedCurriculums)
+    || body.selectedCurriculums.length > 30
+    || body.selectedCurriculums.some((item: unknown) => typeof item !== 'string' || item.length > 300))) {
+    return '선택한 교육 과정 정보를 확인할 수 없습니다. 새로고침 후 과정을 다시 선택해주세요.';
+  }
+  return null;
 }
 
 export async function sendInquiryMail(
