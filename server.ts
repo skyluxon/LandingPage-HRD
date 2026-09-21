@@ -3,7 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { randomUUID } from "node:crypto";
-import { InquiryMailError, sendInquiryMail, validateInquiry } from "./server/inquiry-mail";
+import { InquiryMailError, sendInquiryMail, validateInquiry } from "./server/inquiry-mail.js";
 
 dotenv.config();
 
