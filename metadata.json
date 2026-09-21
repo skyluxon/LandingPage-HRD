@@ -1,0 +1,6 @@
+{
+  "name": "AX Campus for Business - 기업 맞춤형 AI 교육 & HRD 솔루션",
+  "description": "HRD 담당자를 위한 실무 중심 AX(AI 전환) 온·오프라인 교육 커리큘럼 추천, 맞춤형 워크숍 설계 및 임직원 학습 분석 대시보드 솔루션",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
